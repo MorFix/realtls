@@ -18,6 +18,8 @@ export {
 } from './tls/clienthello.js';
 
 export { ja4, ja4Raw, ja3 } from './tls/ja4.js';
+export { RecordProtection, plaintextRecord, readRecord, type RawRecord } from './tls/record.js';
+
 export {
     KeySchedule,
     cipherParams,

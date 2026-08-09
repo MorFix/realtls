@@ -36,6 +36,6 @@ export default tseslint.config(
         },
     },
     {
-        ignores: ['**/dist/', 'coverage/', 'scripts/'],
+        ignores: ['**/dist/', 'coverage/', 'scripts/', 'examples/'],
     },
 );
