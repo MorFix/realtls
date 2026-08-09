@@ -23,6 +23,9 @@ export { RecordProtection, plaintextRecord, readRecord, type RawRecord } from '.
 export { parseServerHello, type ParsedServerHello, type ServerKeyShare } from './tls/serverhello.js';
 export { generateKeyShare, generateKeyShares, x25519SharedSecret, type KeyShare } from './tls/keyexchange.js';
 
+export { TlsConnection, connect, type ConnectOptions } from './tls/connection.js';
+export { h2Request, type H2RequestOptions, type H2Response } from './http2/client.js';
+
 export {
     KeySchedule,
     cipherParams,

@@ -22,6 +22,8 @@ export const HandshakeType = {
     CertificateRequest: 13,
     CertificateVerify: 15,
     Finished: 20,
+    KeyUpdate: 24,
+    CompressedCertificate: 25, // RFC 8879
 } as const;
 
 /** TLS ExtensionType registry (subset Chrome uses). */

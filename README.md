@@ -80,12 +80,14 @@ npm run test:live  # opt-in network tests (REALTLS_LIVE=1)
 
 - [x] Chrome 151 profile + byte-exact ClientHello builder
 - [x] JA3 / JA4 computation, validated against a real Chrome capture
-- [ ] TLS 1.3 record layer + key schedule (HKDF, validated vs RFC 8448)
-- [ ] Handshake state machine (X25519 + X25519MLKEM768, AEAD)
-- [ ] HTTP/2 via Node's built-in `http2` over our socket (Chrome SETTINGS + header order)
-- [ ] undici `Dispatcher` + `realFetch` wrapper
+- [x] TLS 1.3 record layer + key schedule (HKDF, validated vs RFC 8448)
+- [x] Handshake state machine (X25519 + X25519MLKEM768, AEAD, cert + Finished verification)
+- [x] Certificate compression (RFC 8879 brotli) — required by Meta
+- [x] HTTP/2 via Node's built-in `http2` over our socket
+- [x] **Live test: real `200` from `www.metacareers.com`** (curl/default-fetch get 401)
+- [ ] undici `Dispatcher` + `realFetch` / `install()` wrapper (auto Chrome headers, decompression)
+- [ ] HelloRetryRequest + session resumption/tickets
 - [ ] Native backend wrapping uTLS (`bogdanfinn/tls-client`)
-- [ ] Live test: real `200` from `www.metacareers.com`
 
 ## License
 

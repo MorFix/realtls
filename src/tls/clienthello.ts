@@ -155,8 +155,7 @@ export function buildClientHello(p: ClientHelloParams): Uint8Array {
     const { profile, grease } = p;
     const middle = buildMiddleExtensions(p);
 
-    const ordered =
-        p.permutation?.length === middle.length ? p.permutation.map((i) => nonNull(middle[i])) : middle;
+    const ordered = p.permutation?.length === middle.length ? p.permutation.map((i) => nonNull(middle[i])) : middle;
 
     const body = new ByteWriter();
     body.u16(profile.handshakeVersion);
