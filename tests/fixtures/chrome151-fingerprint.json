@@ -1,0 +1,33 @@
+{
+  "_source": "Captured 2026-08-09 from Chrome 151 on macOS via chrome-devtools (tls.peet.ws/api/all) and raw tcpdump of the www.metacareers.com TLS handshake. See AGENTS.md.",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+  "tls": {
+    "record_version": "0x0301",
+    "handshake_version": "0x0303",
+    "cipher_suites_no_grease": [4865, 4866, 4867, 49195, 49199, 49196, 49200, 52393, 52392, 49171, 49172, 156, 157, 47, 53],
+    "extensions_wire_order_example_1": [23, 35, 0, 11, 13, 18, 5, 45, 10, 65037, 17613, 27, 51, 43, 65281, 16],
+    "extensions_wire_order_example_2": [13, 11, 45, 5, 65281, 43, 10, 35, 0, 16, 23, 51, 65037, 18, 27, 17613],
+    "note_shuffle": "Chrome permutes extension order per-connection; GREASE is first, a GREASE is last. JA4 is order-invariant and is the stable target.",
+    "supported_groups_no_grease": [4588, 29, 23, 24],
+    "key_share_groups": ["GREASE(1B)", "X25519MLKEM768=4588(1216B)", "X25519=29(32B)"],
+    "signature_algorithms": ["0x0904", "0x0905", "0x0906", "0x0403", "0x0804", "0x0401", "0x0503", "0x0805", "0x0501", "0x0806", "0x0601"],
+    "supported_versions_no_grease": ["0x0304", "0x0303"],
+    "psk_key_exchange_modes": "psk_dhe_ke (0x01)",
+    "alpn": ["h2", "http/1.1"],
+    "alps": ["h2"],
+    "cert_compression": ["brotli(2)"],
+    "ja3": "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,13-11-45-5-65281-43-10-35-0-16-23-51-65037-18-27-17613,4588-29-23-24,0",
+    "ja3_hash": "c062eb200e459798290ced44690fb0eb",
+    "ja4": "t13d1516h2_8daaf6152771_806a8c22fdea",
+    "ja4_r": "t13d1516h2_002f,0035,009c,009d,1301,1302,1303,c013,c014,c02b,c02c,c02f,c030,cca8,cca9_0005,000a,000b,000d,0012,0017,001b,0023,002b,002d,0033,44cd,fe0d,ff01_0904,0905,0906,0403,0804,0401,0503,0805,0501,0806,0601"
+  },
+  "http2": {
+    "akamai_fingerprint": "1:65536;2:0;4:6291456;6:262144|15663105|0|m,a,s,p",
+    "akamai_fingerprint_hash": "52d84b11737d980aef856699f885ca86",
+    "settings": {"HEADER_TABLE_SIZE": 65536, "ENABLE_PUSH": 0, "INITIAL_WINDOW_SIZE": 6291456, "MAX_HEADER_LIST_SIZE": 262144},
+    "window_update_increment": 15663105,
+    "pseudo_header_order": [":method", ":authority", ":scheme", ":path"],
+    "header_order": ["upgrade-insecure-requests", "user-agent", "accept", "sec-fetch-site", "sec-fetch-mode", "sec-fetch-user", "sec-fetch-dest", "accept-encoding", "accept-language", "priority"],
+    "headers_frame_priority": {"weight": 256, "depends_on": 0, "exclusive": 1}
+  }
+}

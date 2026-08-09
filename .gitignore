@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+coverage/
+# Never commit raw packet captures or key logs (may contain private data)
+*.pcap
+*.pcapng
+sslkeys.log
+*.keylog
