@@ -1,13 +1,14 @@
 name: Release
 
 # Auto-publishes @realtls/js to npm and tags the commit whenever the version in
-# package.json changes on main. No manual `git tag` needed.
+# package.json changes on main. No manual `git tag` and no npm token needed.
 #
+# Auth uses npm Trusted Publishing (OIDC): npm trusts this workflow directly.
 # One-time setup (see docs/PUBLISHING.md):
-#   1. Create the free npm org "realtls" (https://www.npmjs.com/org/create).
-#   2. Create an npm **Automation** access token (bypasses 2FA/OTP for CI publishes).
-#   3. Add it as the GitHub Actions secret NPM_TOKEN.
-# Until NPM_TOKEN is set, this workflow runs and safely no-ops.
+#   1. The @realtls org exists on npm.
+#   2. On npmjs.com, configure @realtls/js → Settings → Trusted Publisher:
+#        repository = MorFix/realtls, workflow = release.yml.
+# Requires: permissions.id-token: write (below) and npm >= 11.5.1 (installed below).
 
 on:
   push:
@@ -17,13 +18,11 @@ on:
 
 permissions:
   contents: write # create tags + GitHub Releases
-  id-token: write # npm provenance
+  id-token: write # OIDC auth for npm Trusted Publishing (+ provenance)
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -34,6 +33,9 @@ jobs:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
           cache: npm
+
+      # Trusted Publishing (OIDC) needs a recent npm.
+      - run: npm install -g npm@latest
 
       - run: npm ci
 
@@ -47,9 +49,6 @@ jobs:
           if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
             echo "release=false" >> "$GITHUB_OUTPUT"
             echo "Tag v${{ steps.version.outputs.version }} already exists — nothing to release."
-          elif [ -z "$NPM_TOKEN" ]; then
-            echo "release=false" >> "$GITHUB_OUTPUT"
-            echo "NPM_TOKEN is not set — skipping publish (see docs/PUBLISHING.md)."
           else
             echo "release=true" >> "$GITHUB_OUTPUT"
           fi
@@ -62,11 +61,9 @@ jobs:
           npx vitest run
           npm run build
 
-      - name: Publish to npm
+      - name: Publish to npm (Trusted Publishing / OIDC)
         if: steps.check.outputs.release == 'true'
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
 
       - name: Tag + create GitHub Release
         if: steps.check.outputs.release == 'true'
