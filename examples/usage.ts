@@ -12,7 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // ✅ 1. The headline use case: a drop-in fetch that talks like Chrome.
 // ─────────────────────────────────────────────────────────────────────────────
-import { realFetch } from 'realtls';
+import { realFetch } from '@realtls/js';
 
 const res = await realFetch('https://www.metacareers.com/jobsearch/');
 console.log(res.status); // 200  (curl / default fetch get 401 here)
@@ -21,7 +21,7 @@ console.log(await res.text()); // undici auto-decompresses gzip/br/zstd
 // ─────────────────────────────────────────────────────────────────────────────
 // ✅ 2. Zero per-call change: install once, every global fetch() becomes browser-like.
 // ─────────────────────────────────────────────────────────────────────────────
-import { install } from 'realtls';
+import { install } from '@realtls/js';
 
 install(); // replaces globalThis.fetch
 await fetch('https://www.metacareers.com/jobsearch/'); // now indistinguishable from Chrome
@@ -30,7 +30,7 @@ await fetch('https://www.metacareers.com/jobsearch/'); // now indistinguishable 
 // ✅ 3. The undici Dispatcher directly (use undici's fetch, not Node's global fetch).
 // ─────────────────────────────────────────────────────────────────────────────
 import { fetch as undiciFetch } from 'undici';
-import { chromeDispatcher } from 'realtls';
+import { chromeDispatcher } from '@realtls/js';
 
 const r = await undiciFetch('https://www.metacareers.com/jobsearch/', {
     dispatcher: chromeDispatcher(),
@@ -39,7 +39,7 @@ const r = await undiciFetch('https://www.metacareers.com/jobsearch/', {
 // ─────────────────────────────────────────────────────────────────────────────
 // 🚧 4. Choosing a browser profile and engine explicitly.
 // ─────────────────────────────────────────────────────────────────────────────
-import { chrome151 } from 'realtls';
+import { chrome151 } from '@realtls/js';
 
 const dispatcher = chromeDispatcher({
     profile: chrome151, // which browser fingerprint to emulate
@@ -48,7 +48,7 @@ const dispatcher = chromeDispatcher({
 await fetch('https://tls.peet.ws/api/all', { dispatcher });
 
 // A whole client bound to one profile, reused across requests (keep-alive pooled):
-import { RealTLSClient } from 'realtls';
+import { RealTLSClient } from '@realtls/js';
 
 const client = new RealTLSClient({ profile: chrome151 });
 const a = await client.fetch('https://www.metacareers.com/jobsearch/');
@@ -58,7 +58,7 @@ await client.close();
 // ─────────────────────────────────────────────────────────────────────────────
 // ✅ 5. What already works today: inspect/build the fingerprint itself.
 // ─────────────────────────────────────────────────────────────────────────────
-import { buildClientHello, parseClientHello, ja4, generateGrease, chrome151 as chrome } from 'realtls';
+import { buildClientHello, parseClientHello, ja4, generateGrease, chrome151 as chrome } from '@realtls/js';
 import { randomBytes } from 'node:crypto';
 
 // Build a byte-exact Chrome ClientHello with fresh per-connection randomness…

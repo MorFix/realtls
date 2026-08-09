@@ -39,10 +39,16 @@ Node's `fetch` uses OpenSSL, which **cannot** reproduce Chrome's ClientHello:
 - **Pluggable into `fetch`**, not a replacement — the primary surface is a custom
   undici `Dispatcher`.
 
+## Install
+
+```bash
+npm install @realtls/js
+```
+
 ## Usage
 
 ```ts
-import { realFetch, install } from 'realtls';
+import { realFetch, install } from '@realtls/js';
 
 // 1. Drop-in fetch that talks like Chrome (auto Chrome headers + TLS + response decompress):
 const res = await realFetch('https://www.metacareers.com/jobsearch/');
@@ -54,7 +60,7 @@ await fetch('https://www.metacareers.com/jobsearch/'); // 200
 
 // 3. Or use the undici Dispatcher directly (with undici's fetch):
 import { fetch } from 'undici';
-import { chromeDispatcher } from 'realtls';
+import { chromeDispatcher } from '@realtls/js';
 await fetch(url, { dispatcher: chromeDispatcher() });
 ```
 
@@ -65,7 +71,7 @@ await fetch(url, { dispatcher: chromeDispatcher() });
 ## Available today (fingerprint core)
 
 ```ts
-import { buildClientHello, parseClientHello, ja4, chrome151 } from 'realtls';
+import { buildClientHello, parseClientHello, ja4, chrome151 } from '@realtls/js';
 
 // Build a byte-exact Chrome ClientHello and confirm its JA4:
 const parsed = parseClientHello(/* your captured or built ClientHello bytes */);

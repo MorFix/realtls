@@ -1,10 +1,13 @@
 {
-    "name": "realtls",
+    "name": "@realtls/js",
     "version": "0.1.0",
-    "description": "Perform TLS + HTTP/2 exactly like a real browser (Chrome) from Node/TypeScript, so fetch() defeats JA3/JA4 fingerprinting. Pure-TS TLS 1.3 stack (default) + optional BoringSSL backend.",
+    "description": "Perform TLS + HTTP/2 exactly like a real browser (Chrome) from Node/TypeScript, so fetch() defeats JA3/JA4 fingerprinting. Pure-TS TLS 1.3 stack (default) + optional uTLS native backend.",
     "type": "module",
     "license": "MIT",
     "author": "MorFix",
+    "publishConfig": {
+        "access": "public"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/MorFix/realtls.git"
@@ -19,7 +22,7 @@
         "fetch",
         "undici",
         "impersonate",
-        "boringssl",
+        "utls",
         "mlkem"
     ],
     "engines": {
