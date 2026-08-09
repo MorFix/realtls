@@ -98,7 +98,9 @@ npm run test:live  # opt-in network tests (REALTLS_LIVE=1)
 - [x] HTTP/2 via Node's built-in `http2` over our socket
 - [x] **Live test: real `200` from `www.metacareers.com`** (curl/default-fetch get 401)
 - [x] undici `Dispatcher` + `realFetch` / `install()` (auto Chrome headers, gzip/br/zstd decompression)
-- [ ] Native backend wrapping uTLS (`bogdanfinn/tls-client`) for exact HTTP/2 + header order
+- [x] Native backend wrapping uTLS (`bogdanfinn/tls-client`) via FFI — code complete; needs the
+      shared library present (`REALTLS_NATIVE_LIB`) to run. Gives exact HTTP/2 + header order.
+- [ ] Auto-download the uTLS shared library from the GitHub Release (see `docs/PACKAGING.md`)
 - [ ] HelloRetryRequest + session resumption/tickets
 
 ## License

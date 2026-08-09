@@ -26,6 +26,11 @@ export { generateKeyShare, generateKeyShares, x25519SharedSecret, type KeyShare 
 export { TlsConnection, connect, type ConnectOptions } from './tls/connection.js';
 export { h2Request, type H2RequestOptions, type H2Response } from './http2/client.js';
 
+export { engines, type EngineName } from './engines.js';
+export { nativeFetch, type NativeFetchInit } from './native/fetch.js';
+export { loadTlsClient, isNativeAvailable, resolveLibraryPath, type TlsClientLib } from './native/loader.js';
+export { nativeRequest, type NativeRequest, type NativeResponse } from './native/tlsClient.js';
+
 export { chromeConnector, type ConnectorOptions } from './fetch/connector.js';
 export {
     chromeDispatcher,

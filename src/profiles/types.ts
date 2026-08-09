@@ -56,5 +56,8 @@ export interface TlsProfile {
      */
     defaultHeaders?: Record<string, string>;
 
+    /** tls-client identifier for the native (uTLS) backend, e.g. "chrome_133". */
+    nativeIdentifier?: string;
+
     h2: Http2Profile;
 }

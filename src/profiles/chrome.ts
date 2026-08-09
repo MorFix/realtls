@@ -83,6 +83,8 @@ export const chrome151: TlsProfile = {
         priority: 'u=0, i',
     },
 
+    nativeIdentifier: 'chrome_133',
+
     h2: {
         settings: [
             [0x1, 65536], // HEADER_TABLE_SIZE
