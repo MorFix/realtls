@@ -1,6 +1,6 @@
 {
     "name": "@realtls/native",
-    "version": "0.1.0",
+    "version": "0.1.2",
     "description": "Highest-fidelity backend for realtls: HTTP requests via the uTLS (bogdanfinn/tls-client) shared library, with exact browser TLS + HTTP/2 fingerprints. Prebuilt binaries ship as per-platform packages; nothing is downloaded at runtime.",
     "type": "module",
     "license": "MIT",
@@ -50,11 +50,11 @@
         "koffi": "^3.1.4"
     },
     "optionalDependencies": {
-        "@realtls/native-darwin-arm64": "0.1.0",
-        "@realtls/native-darwin-x64": "0.1.0",
-        "@realtls/native-linux-x64-glibc": "0.1.0",
-        "@realtls/native-linux-x64-musl": "0.1.0",
-        "@realtls/native-linux-arm64": "0.1.0",
-        "@realtls/native-win32-x64": "0.1.0"
+        "@realtls/native-darwin-arm64": "^0.1.1",
+        "@realtls/native-darwin-x64": "^0.1.1",
+        "@realtls/native-linux-x64-glibc": "^0.1.1",
+        "@realtls/native-linux-x64-musl": "^0.1.1",
+        "@realtls/native-linux-arm64": "^0.1.1",
+        "@realtls/native-win32-x64": "^0.1.1"
     }
 }

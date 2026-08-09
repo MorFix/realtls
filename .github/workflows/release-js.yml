@@ -37,6 +37,10 @@ jobs:
         run: |
           if git rev-parse "js-v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
             echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "Tag exists — skipping."
+          elif npm view "@realtls/js@${{ steps.version.outputs.version }}" version >/dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "Version already on npm — skipping."
           else
             echo "release=true" >> "$GITHUB_OUTPUT"
           fi

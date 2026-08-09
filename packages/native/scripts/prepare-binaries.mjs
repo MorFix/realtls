@@ -9,7 +9,7 @@
  *   node scripts/prepare-binaries.mjs darwin-arm64   # just one (e.g. a CI matrix job)
  */
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 
@@ -18,11 +18,13 @@ const root = join(here, '..');
 const manifest = JSON.parse(readFileSync(join(root, 'binaries.json'), 'utf8'));
 const pkgVersion = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
 
+const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
+
 async function download(url, expectedSha) {
     const res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) throw new Error(`download ${url} -> ${res.status}`);
     const buf = Buffer.from(await res.arrayBuffer());
-    const sha = createHash('sha256').update(buf).digest('hex');
+    const sha = sha256(buf);
     if (sha !== expectedSha) throw new Error(`checksum mismatch for ${url}: got ${sha}, expected ${expectedSha}`);
     return buf;
 }
@@ -55,9 +57,14 @@ async function prepare(key, asset) {
     const index = `import { fileURLToPath } from 'node:url';\nexport const libraryPath = fileURLToPath(new URL('./${asset.file}', import.meta.url));\n`;
     writeFileSync(join(dir, 'index.js'), index);
 
+    const binPath = join(dir, asset.file);
+    if (existsSync(binPath) && sha256(readFileSync(binPath)) === asset.sha256) {
+        console.log(`  ${key.padEnd(16)} -> prebuilt/${key}/ (cached, verified)`);
+        return;
+    }
     const buf = await download(`${manifest.releaseBase}/${asset.file}`, asset.sha256);
-    writeFileSync(join(dir, asset.file), buf);
-    console.log(`  ${key.padEnd(16)} -> prebuilt/${key}/ (${(buf.length / 1e6).toFixed(1)} MB, verified)`);
+    writeFileSync(binPath, buf);
+    console.log(`  ${key.padEnd(16)} -> prebuilt/${key}/ (${(buf.length / 1e6).toFixed(1)} MB, downloaded, verified)`);
 }
 
 const only = process.argv[2];

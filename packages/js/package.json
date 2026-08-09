@@ -1,6 +1,6 @@
 {
     "name": "@realtls/js",
-    "version": "0.2.0",
+    "version": "0.2.2",
     "description": "Perform TLS 1.3 + HTTP/2 exactly like a real browser (Chrome) from Node/TypeScript, so fetch() defeats JA3/JA4 fingerprinting. Pure-TypeScript TLS 1.3 stack + undici fetch integration.",
     "type": "module",
     "license": "MIT",
