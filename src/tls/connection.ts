@@ -59,6 +59,10 @@ export class TlsConnection extends Duplex {
         return this.alpn ?? false;
     }
 
+    get servername(): string {
+        return this.host;
+    }
+
     setTimeout(_ms: number, cb?: () => void): this {
         if (cb) this.once('timeout', cb);
         return this;

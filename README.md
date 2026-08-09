@@ -39,16 +39,28 @@ Node's `fetch` uses OpenSSL, which **cannot** reproduce Chrome's ClientHello:
 - **Pluggable into `fetch`**, not a replacement — the primary surface is a custom
   undici `Dispatcher`.
 
-## Intended usage (target API)
+## Usage
 
 ```ts
-import { chromeDispatcher } from 'realtls';
+import { realFetch, install } from 'realtls';
 
-const res = await fetch('https://www.metacareers.com/jobsearch/', {
-  dispatcher: chromeDispatcher(), // undici Dispatcher — existing fetch code is unchanged
-});
-console.log(res.status); // 200
+// 1. Drop-in fetch that talks like Chrome (auto Chrome headers + TLS + response decompress):
+const res = await realFetch('https://www.metacareers.com/jobsearch/');
+console.log(res.status); // 200  (curl / default fetch get 401)
+
+// 2. Or make the GLOBAL fetch talk like Chrome, then use fetch normally:
+install();
+await fetch('https://www.metacareers.com/jobsearch/'); // 200
+
+// 3. Or use the undici Dispatcher directly (with undici's fetch):
+import { fetch } from 'undici';
+import { chromeDispatcher } from 'realtls';
+await fetch(url, { dispatcher: chromeDispatcher() });
 ```
+
+> Note: the `dispatcher` option must be used with **undici's** `fetch` (or via `install()`),
+> not Node's built-in global `fetch` — Node bundles a different undici build whose handler
+> interface is incompatible with an external dispatcher. `realFetch`/`install` handle this.
 
 ## Available today (fingerprint core)
 
@@ -85,9 +97,9 @@ npm run test:live  # opt-in network tests (REALTLS_LIVE=1)
 - [x] Certificate compression (RFC 8879 brotli) — required by Meta
 - [x] HTTP/2 via Node's built-in `http2` over our socket
 - [x] **Live test: real `200` from `www.metacareers.com`** (curl/default-fetch get 401)
-- [ ] undici `Dispatcher` + `realFetch` / `install()` wrapper (auto Chrome headers, decompression)
+- [x] undici `Dispatcher` + `realFetch` / `install()` (auto Chrome headers, gzip/br/zstd decompression)
+- [ ] Native backend wrapping uTLS (`bogdanfinn/tls-client`) for exact HTTP/2 + header order
 - [ ] HelloRetryRequest + session resumption/tickets
-- [ ] Native backend wrapping uTLS (`bogdanfinn/tls-client`)
 
 ## License
 

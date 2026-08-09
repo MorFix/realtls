@@ -26,6 +26,16 @@ export { generateKeyShare, generateKeyShares, x25519SharedSecret, type KeyShare 
 export { TlsConnection, connect, type ConnectOptions } from './tls/connection.js';
 export { h2Request, type H2RequestOptions, type H2Response } from './http2/client.js';
 
+export { chromeConnector, type ConnectorOptions } from './fetch/connector.js';
+export {
+    chromeDispatcher,
+    realFetch,
+    install,
+    uninstall,
+    type ChromeDispatcherOptions,
+    type RealFetchInit,
+} from './fetch/dispatcher.js';
+
 export {
     KeySchedule,
     cipherParams,

@@ -49,5 +49,12 @@ export interface TlsProfile {
     /** Shuffle the middle extensions per-connection, as Chrome/BoringSSL do. */
     permuteExtensions: boolean;
 
+    /**
+     * Chrome's default request headers (values), applied by realFetch/the dispatcher unless
+     * the caller overrides them. Note: HTTP header *order* cannot be controlled through the
+     * fetch/undici path (the Fetch spec sorts headers) — the native backend controls order.
+     */
+    defaultHeaders?: Record<string, string>;
+
     h2: Http2Profile;
 }

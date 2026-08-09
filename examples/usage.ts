@@ -10,32 +10,30 @@
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🚧 1. The headline use case: least-invasive drop-in for `fetch`.
-//        Existing code is unchanged except for one `dispatcher` option.
-// ─────────────────────────────────────────────────────────────────────────────
-import { chromeDispatcher } from 'realtls';
-
-const res = await fetch('https://www.metacareers.com/jobsearch/', {
-    dispatcher: chromeDispatcher(), // undici Dispatcher speaking Chrome's TLS + HTTP/2
-});
-console.log(res.status); // 200  (curl / default fetch get 401 here)
-console.log(await res.text());
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 🚧 2. Zero per-call change: install once, every global fetch() becomes browser-like.
-// ─────────────────────────────────────────────────────────────────────────────
-import { install } from 'realtls';
-
-install(); // swaps undici's global dispatcher
-await fetch('https://www.metacareers.com/jobsearch/'); // now indistinguishable from Chrome
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 🚧 3. Convenience wrapper, if you'd rather not touch the global.
+// ✅ 1. The headline use case: a drop-in fetch that talks like Chrome.
 // ─────────────────────────────────────────────────────────────────────────────
 import { realFetch } from 'realtls';
 
-const r = await realFetch('https://www.metacareers.com/jobsearch/', {
-    headers: { 'accept-language': 'en-US,en;q=0.9' },
+const res = await realFetch('https://www.metacareers.com/jobsearch/');
+console.log(res.status); // 200  (curl / default fetch get 401 here)
+console.log(await res.text()); // undici auto-decompresses gzip/br/zstd
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ 2. Zero per-call change: install once, every global fetch() becomes browser-like.
+// ─────────────────────────────────────────────────────────────────────────────
+import { install } from 'realtls';
+
+install(); // replaces globalThis.fetch
+await fetch('https://www.metacareers.com/jobsearch/'); // now indistinguishable from Chrome
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ 3. The undici Dispatcher directly (use undici's fetch, not Node's global fetch).
+// ─────────────────────────────────────────────────────────────────────────────
+import { fetch as undiciFetch } from 'undici';
+import { chromeDispatcher } from 'realtls';
+
+const r = await undiciFetch('https://www.metacareers.com/jobsearch/', {
+    dispatcher: chromeDispatcher(),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
