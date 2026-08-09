@@ -20,6 +20,9 @@ export {
 export { ja4, ja4Raw, ja3 } from './tls/ja4.js';
 export { RecordProtection, plaintextRecord, readRecord, type RawRecord } from './tls/record.js';
 
+export { parseServerHello, type ParsedServerHello, type ServerKeyShare } from './tls/serverhello.js';
+export { generateKeyShare, generateKeyShares, x25519SharedSecret, type KeyShare } from './tls/keyexchange.js';
+
 export {
     KeySchedule,
     cipherParams,

@@ -45,7 +45,7 @@ import { chrome151 } from 'realtls';
 
 const dispatcher = chromeDispatcher({
     profile: chrome151, // which browser fingerprint to emulate
-    engine: 'pure', // 'pure' (default, zero native deps) | 'boringssl' (max fidelity)
+    engine: 'pure', // 'pure' (default, zero native deps) | 'native' (uTLS, max fidelity)
 });
 await fetch('https://tls.peet.ws/api/all', { dispatcher });
 

@@ -97,20 +97,28 @@ A single `TlsEngine` interface has two implementations:
   **not** hand-roll cryptography — primitives come from audited libraries
   (`@noble/curves` X25519, `@noble/post-quantum` ML-KEM-768, `@noble/hashes` HKDF/SHA-2,
   `@noble/ciphers` AES-GCM / ChaCha20-Poly1305). Self-contained, no native build, portable.
-- **`boringssl` (opt-in):** binds to a BoringSSL/curl-impersonate-style backend for
-  maximum fidelity with the least reverse-engineering, at the cost of native binaries.
-  Same public API; selectable via `engine: "boringssl"`.
+- **`native` (opt-in):** wraps **uTLS** (`bogdanfinn/tls-client`, Go) — a full TLS stack
+  that already ships the browser-fingerprint database **and** HTTP/2, distributed as a
+  cross-platform shared library. This is a thin wrapper (near-zero plumbing) and the
+  fastest path to a real `200`. Selectable via `engine: "native"`. (Raw BoringSSL/
+  curl-impersonate remains a possible alternative but uTLS is the chosen target — it
+  avoids re-implementing the fingerprint + H2 wiring ourselves.)
 
 _Rationale:_ the default must be pure-TS and dependency-light so it "just works" via npm;
-BoringSSL is the escape hatch when a future Chrome detail outpaces our pure stack.
+the uTLS backend is the escape hatch when a future Chrome detail outpaces our pure stack,
+and reuses an existing browser-faithful stack rather than reinventing it.
 
 ### D2 — Match the fingerprint at **both** layers: TLS **and** HTTP/2
 
 Modern anti-bot systems fingerprint the TLS ClientHello (JA3/JA4) **and** the HTTP/2
 layer (SETTINGS frame, WINDOW_UPDATE, header/pseudo-header order — the "Akamai"
-fingerprint). v1 targets both. Our H2 client reproduces Chrome's exact SETTINGS
+fingerprint). v1 targets both. **Reuse over reinvention:** the pure engine runs Node's
+built-in `http2` client over our custom TLS socket (via `createConnection`) so we don't
+re-implement HPACK/framing — we only override Chrome's exact SETTINGS
 (`65536/0/6291456/262144`), initial `WINDOW_UPDATE` (`15663105`), pseudo-header order
-(`m,a,s,p`) and default header order.
+(`m,a,s,p`) and default header order. Certificate chain verification likewise reuses
+Node's `crypto.X509Certificate` + `tls.checkServerIdentity` rather than a hand-rolled
+ASN.1/PKI parser.
 
 ### D3 — Integrate _into_ `fetch`, don't replace it
 

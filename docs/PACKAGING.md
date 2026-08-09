@@ -18,19 +18,21 @@ Requirements for the core:
 - `undici` is an optional **peer** dependency (Node already bundles it for `fetch`; we only
   need the standalone package to subclass `Dispatcher`).
 
-## The only native piece: the optional BoringSSL backend
+## The only native piece: the optional uTLS backend
 
-Maximum-fidelity mode (`engine: 'boringssl'`) needs native code. We keep it **entirely
+Maximum-fidelity mode (`engine: 'native'`) needs native code. Our chosen backend is
+**uTLS** (`bogdanfinn/tls-client`, Go) — it already implements the full TLS stack, the
+browser-fingerprint database, and HTTP/2, so our wrapper is thin. We keep it **entirely
 optional** and make installation smooth using the **platform-specific optional packages**
 pattern (the approach esbuild, `@napi-rs`, and Rollup/swc use):
 
 1. Publish one prebuilt package per platform-arch, e.g.
-   `@realtls/boringssl-darwin-arm64`, `-darwin-x64`, `-linux-x64-gnu`, `-linux-arm64-gnu`,
-   `-linux-x64-musl`, `-win32-x64`.
+   `@realtls/native-darwin-arm64`, `-darwin-x64`, `-linux-x64-gnu`, `-linux-arm64-gnu`,
+   `-linux-x64-musl`, `-win32-x64`, each embedding the uTLS shared library for that target.
 2. The main `realtls` package lists **all** of them under `optionalDependencies`. npm
    installs only the one matching the host `os`/`cpu`/`libc` (declared via each sub-package's
    `os`/`cpu`/`libc` fields) and silently skips the rest.
-3. At runtime, `engine: 'boringssl'` `require`s the matching package; if it's absent it
+3. At runtime, `engine: 'native'` `require`s the matching package; if it's absent it
    throws a clear, actionable error (or optionally falls back to `pure`).
 
 Why this pattern over the alternatives:
@@ -45,30 +47,30 @@ Why this pattern over the alternatives:
 ### Building the prebuilts
 
 A GitHub Actions matrix (macos-14/arm64, macos-13/x64, ubuntu x64+arm64 for glibc & musl,
-windows x64) builds the addon and publishes the per-platform packages. Two viable
-implementations for the native layer, in order of preference:
+windows x64) cross-compiles the uTLS shared library and publishes the per-platform
+packages. Integration options, in order of preference:
 
-1. **N-API addon (napi-rs or node-addon-api)** wrapping BoringSSL — a real library binding,
-   no subprocess. Cleanest integration; most build work.
-2. **Bundled `curl-impersonate` binary** invoked out-of-process — far less code to maintain
-   (reuse a battle-tested browser-faithful stack), at the cost of spawning a process and
-   marshalling requests/responses. Good first cut for the `boringssl` engine.
+1. **uTLS shared library via FFI** (`bogdanfinn/tls-client`'s `cffi` build, loaded with
+   `koffi`/`ffi-napi`) — reuses a battle-tested browser-faithful stack including HTTP/2;
+   minimal code to maintain. **Chosen approach.**
+2. **N-API addon wrapping BoringSSL** — a from-scratch binding; maximum control but we'd
+   re-implement the fingerprint + H2 wiring ourselves. Kept only as a fallback option.
 
 ## Runtime capability check
 
 ```ts
 import { engines } from 'realtls';
-engines.available(); // -> ['pure']  or  ['pure', 'boringssl']
+engines.available(); // -> ['pure']  or  ['pure', 'native']
 ```
 
 Consumers can pick `pure` explicitly for reproducible, dependency-light deploys (e.g. Lambda
-layers, Alpine containers) and only opt into `boringssl` where the prebuilt exists.
+layers, Alpine containers) and only opt into `native` where the prebuilt exists.
 
 ## Checklist
 
 - [ ] `dependencies` contains only pure-JS packages; no `postinstall`.
-- [ ] `optionalDependencies` lists every `@realtls/boringssl-*` prebuilt.
+- [ ] `optionalDependencies` lists every `@realtls/native-*` prebuilt.
 - [ ] Each prebuilt declares `os` / `cpu` / `libc`.
-- [ ] `engine: 'boringssl'` throws a clear error (or falls back) when no prebuilt is present.
+- [ ] `engine: 'native'` throws a clear error (or falls back) when no prebuilt is present.
 - [ ] CI matrix builds + publishes all prebuilts on tag.
 - [ ] `files` allowlist keeps the published tarball lean (`dist`, `README`, `AGENTS.md`).

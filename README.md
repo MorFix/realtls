@@ -35,7 +35,7 @@ Node's `fetch` uses OpenSSL, which **cannot** reproduce Chrome's ClientHello:
 - **Two engines behind one interface**, pure-TypeScript is the default:
   - `pure` — a from-scratch TLS 1.3 stack over a raw socket; crypto primitives come from
     audited `@noble/*` libraries (X25519, ML-KEM-768, HKDF/SHA-2, AES-GCM/ChaCha20).
-  - `boringssl` — opt-in native backend for maximum fidelity.
+  - `native` — opt-in backend wrapping uTLS (`bogdanfinn/tls-client`) for maximum fidelity.
 - **Pluggable into `fetch`**, not a replacement — the primary surface is a custom
   undici `Dispatcher`.
 
@@ -82,9 +82,9 @@ npm run test:live  # opt-in network tests (REALTLS_LIVE=1)
 - [x] JA3 / JA4 computation, validated against a real Chrome capture
 - [ ] TLS 1.3 record layer + key schedule (HKDF, validated vs RFC 8448)
 - [ ] Handshake state machine (X25519 + X25519MLKEM768, AEAD)
-- [ ] HTTP/2 client with Chrome SETTINGS + header ordering
+- [ ] HTTP/2 via Node's built-in `http2` over our socket (Chrome SETTINGS + header order)
 - [ ] undici `Dispatcher` + `realFetch` wrapper
-- [ ] BoringSSL backend
+- [ ] Native backend wrapping uTLS (`bogdanfinn/tls-client`)
 - [ ] Live test: real `200` from `www.metacareers.com`
 
 ## License
