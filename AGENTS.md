@@ -3,8 +3,9 @@
 > **What this is.** `realtls` performs TLS 1.3 + HTTP/2 from Node/TypeScript so that the
 > bytes on the wire are indistinguishable from a real Chrome browser. This lets `fetch()`
 > reach servers that classify clients by TLS/HTTP fingerprint (JA3/JA4, Akamai H2) and
-> reject non-browser stacks — e.g. `https://www.metacareers.com/jobsearch/`, which returns
-> `401` to `curl` and to Node's default `fetch` but `200` to Chrome.
+> reject non-browser stacks — the kind of sites that return `401`/`403` to `curl` and to
+> Node's default `fetch` but `200` to Chrome. A neutral way to verify the match is the
+> TLS-fingerprint echo `https://tls.peet.ws/api/all`, which reports the JA3/JA4 it observed.
 
 This document records **how the project stays faithful to a real browser** and the
 **key engineering decisions** behind it. `CLAUDE.md` is a symlink to this file.
@@ -18,22 +19,20 @@ from two independent, cross-checked sources of ground truth:
 
 ### 1. Live capture from a real Chrome, two ways (`chrome-devtools` + raw packet capture)
 
-- **`chrome-devtools` (MCP):** we drive the actual installed Chrome to
-  `https://www.metacareers.com/jobsearch/` (confirming the browser succeeds where
-  `curl`/`fetch` get `401`) and to a TLS/HTTP2 reflection endpoint
-  (`https://tls.peet.ws/api/all`) using Chrome's own network stack. This yields Chrome's
-  **parsed** ClientHello: ordered cipher suites, ordered extensions, supported groups,
-  signature algorithms, ALPN/ALPS, key-share groups, plus the **HTTP/2 fingerprint**
-  (SETTINGS, WINDOW_UPDATE, pseudo-header order, header order) and the computed
-  **JA3 / JA4 / Akamai** hashes.
+- **`chrome-devtools` (MCP):** we drive the actual installed Chrome to a TLS/HTTP2
+  reflection endpoint (`https://tls.peet.ws/api/all`) using Chrome's own network stack.
+  This yields Chrome's **parsed** ClientHello: ordered cipher suites, ordered extensions,
+  supported groups, signature algorithms, ALPN/ALPS, key-share groups, plus the **HTTP/2
+  fingerprint** (SETTINGS, WINDOW_UPDATE, pseudo-header order, header order) and the
+  computed **JA3 / JA4 / Akamai** hashes.
 - **Raw TCP capture (`tcpdump`):** in parallel we packet-capture the _actual_ TLS
-  handshake to `www.metacareers.com` and extract the **raw ClientHello bytes** from the
-  reassembled TCP stream. This is the byte-level source of truth and is what our unit
-  tests assert against.
+  handshake (to `tls.peet.ws`) and extract the **raw ClientHello bytes** from the
+  reassembled TCP stream, selecting the non-resumption (no `pre_shared_key`) handshake.
+  This is the byte-level source of truth and is what our unit tests assert against.
 
 Both captures agreed. The distilled expected values live in
 `tests/fixtures/chrome151-fingerprint.json`; the raw handshake bytes live in
-`tests/fixtures/chrome151-clienthello-metacareers.{bin,hex}`.
+`tests/fixtures/chrome151-clienthello.{bin,hex}`.
 
 > Captured profile: **Chrome 151, macOS**, 2026-08-09.
 > `JA4 = t13d1516h2_8daaf6152771_806a8c22fdea`,
@@ -42,12 +41,11 @@ Both captures agreed. The distilled expected values live in
 **Reproducing a capture** (requires local sudo for packet capture):
 
 ```bash
-# 1. start capture (Meta edge ranges, TCP 443)
-sudo tcpdump -i en0 -s 0 -U -w cap.pcap \
-  'tcp port 443 and (net 57.144.0.0/16 or net 31.13.0.0/16 or net 157.240.0.0/16)'
-# 2. drive Chrome to the target + the echo endpoint (chrome-devtools MCP, or manually)
-#    https://www.metacareers.com/jobsearch/  and  https://tls.peet.ws/api/all
-# 3. extract + decode the ClientHello  (scripts kept under scripts/)
+# 1. start capture, filtered to the echo host's IP, TCP 443
+sudo tcpdump -i en0 -s 0 -U -w cap.pcap "tcp port 443 and host $(dig +short tls.peet.ws | head -1)"
+# 2. drive Chrome to the echo endpoint (chrome-devtools MCP, or manually)
+#    https://tls.peet.ws/api/all
+# 3. extract + decode the ClientHello, choosing the non-PSK handshake (scripts/)
 ```
 
 Captures (`*.pcap`) are **git-ignored** — never commit raw traffic.
@@ -127,7 +125,7 @@ surface is a custom **undici `Dispatcher`** so existing code works unchanged:
 
 ```ts
 import { chromeDispatcher } from 'realtls';
-const res = await fetch('https://www.metacareers.com/jobsearch/', { dispatcher: chromeDispatcher() });
+const res = await fetch('https://tls.peet.ws/api/all', { dispatcher: chromeDispatcher() });
 ```
 
 A convenience `realFetch(url, init)` wrapper and an `install()` that swaps the global
@@ -139,7 +137,8 @@ The fingerprint core is verified **offline** against the real capture: the Clien
 builder must reproduce Chrome's cipher list, extension set, groups, sigalgs and ALPN, and
 its computed **JA4 must equal the captured `t13d1516h2_8daaf6152771_806a8c22fdea`**. Key
 schedule is checked against RFC 8448 vectors. Live network tests are opt-in
-(`REALTLS_LIVE=1`) and include a real `200` from `www.metacareers.com`.
+(`REALTLS_LIVE=1`) and assert that a live TLS-fingerprint service (`tls.peet.ws`) observes
+our handshake as Chrome's exact JA4.
 
 ---
 

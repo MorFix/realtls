@@ -3,7 +3,7 @@ import { NamedGroup, TLS_VERSION } from '../tls/constants.js';
 
 /**
  * Chrome 151 on macOS. Captured 2026-08-09 from a real browser via chrome-devtools
- * (tls.peet.ws/api/all) cross-checked with a raw tcpdump of the www.metacareers.com
+ * (tls.peet.ws/api/all) cross-checked with a raw tcpdump of the tls.peet.ws
  * handshake. See AGENTS.md and tests/fixtures/chrome151-fingerprint.json.
  *
  *   JA4  = t13d1516h2_8daaf6152771_806a8c22fdea

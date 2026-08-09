@@ -246,6 +246,14 @@ export class TlsConnection extends Duplex {
         this.clientAppProt = new RecordProtection(params, clientApp.key, clientApp.iv);
         this.serverAppProt = new RecordProtection(params, serverApp.key, serverApp.iv);
         this.handshakeDone = true;
+
+        // Records that arrived after the server Finished (commonly one or more
+        // NewSessionTicket messages, encrypted under the *application* key at sequence 0)
+        // were queued during the handshake phase. Drain them now so the server's
+        // application-data sequence number stays in sync; otherwise the next real record
+        // fails AEAD authentication ("invalid tag").
+        const queued = this.recordQueue.splice(0);
+        for (const rec of queued) this.handleAppRecord(rec);
     }
 
     private async readServerFlight(
@@ -342,17 +350,30 @@ export class TlsConnection extends Duplex {
         if (now < Date.parse(leaf.validFrom) || now > Date.parse(leaf.validTo)) {
             throw new Error('leaf certificate is expired or not yet valid');
         }
-        // Link each cert to its issuer, then anchor the top to a trusted root.
+        // Verify each cert against the next in the chain, and stop as soon as we reach a
+        // trust anchor. We anchor by *public key*, not by certificate identity: a CA key can
+        // appear as several different certs (self-signed root vs cross-signed), so a presented
+        // cert whose key matches a trusted root's key is anchored even if its bytes differ.
         const roots = rootCertificates.map((pem) => new X509Certificate(pem));
+        const spki = (c: X509Certificate): string =>
+            c.publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+        const rootKeys = new Set(roots.map(spki));
+
         for (let i = 0; i < certs.length; i++) {
             const cur = nonNull(certs[i]);
-            const issuer = certs[i + 1] ?? roots.find((r) => cur.checkIssued(r));
-            if (!issuer) throw new Error('could not build certificate chain to a trusted root');
-            if (!cur.verify(issuer.publicKey)) throw new Error('certificate signature verification failed');
+            if (rootKeys.has(spki(cur))) return; // this cert is (keyed by) a trusted root
+            const next = certs[i + 1];
+            if (next) {
+                if (!cur.verify(next.publicKey)) throw new Error('certificate signature verification failed');
+                continue;
+            }
+            // Top of the presented chain and not itself an anchor: it must be signed by one.
+            const byName = roots.filter((r) => r.subject === cur.issuer);
+            const candidates = byName.length > 0 ? byName : roots;
+            if (!candidates.some((r) => cur.verify(r.publicKey))) {
+                throw new Error('certificate chain is not anchored to a trusted root');
+            }
         }
-        const top = nonNull(certs[certs.length - 1]);
-        const anchored = certs.length > 1 || roots.some((r) => top.checkIssued(r) && top.verify(r.publicKey));
-        if (!anchored) throw new Error('certificate chain is not anchored to a trusted root');
     }
 
     private verifyCertificateVerify(

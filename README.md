@@ -4,9 +4,11 @@ Perform **TLS 1.3 + HTTP/2 exactly like a real Chrome browser** from Node/TypeSc
 that `fetch()` can reach servers that classify clients by their TLS/HTTP fingerprint
 (JA3 / JA4 / Akamai HTTP-2) and reject non-browser stacks.
 
-Motivating example: `https://www.metacareers.com/jobsearch/` returns **401** to `curl` and
-to Node's default `fetch` (OpenSSL fingerprint), but **200** to Chrome. `realtls` makes
-Node send the same bytes Chrome does.
+Many production sites fingerprint the TLS handshake (JA3/JA4) and the HTTP/2 layer and
+reject anything that isn't a real browser — `curl` and Node's default `fetch` (OpenSSL
+fingerprint) get `401`/`403` where Chrome gets `200`. `realtls` makes Node send the same
+bytes Chrome does. You can verify it against a TLS-fingerprint echo such as
+`https://tls.peet.ws/api/all`, which reports the JA3/JA4 it observed.
 
 > **Status:** the **fingerprint core is complete and tested** — a byte-exact Chrome-151
 > ClientHello builder whose **JA4 matches a real Chrome** (`t13d1516h2_8daaf6152771_806a8c22fdea`)
@@ -51,12 +53,12 @@ npm install @realtls/js
 import { realFetch, install } from '@realtls/js';
 
 // 1. Drop-in fetch that talks like Chrome (auto Chrome headers + TLS + response decompress):
-const res = await realFetch('https://www.metacareers.com/jobsearch/');
-console.log(res.status); // 200  (curl / default fetch get 401)
+const res = await realFetch('https://tls.peet.ws/api/all');
+console.log((await res.json()).tls.ja4); // t13d1516h2_8daaf6152771_806a8c22fdea (a real Chrome)
 
 // 2. Or make the GLOBAL fetch talk like Chrome, then use fetch normally:
 install();
-await fetch('https://www.metacareers.com/jobsearch/'); // 200
+await fetch('https://a-site-that-fingerprints-tls.example'); // now looks like Chrome
 
 // 3. Or use the undici Dispatcher directly (with undici's fetch):
 import { fetch } from 'undici';
@@ -100,9 +102,9 @@ npm run test:live  # opt-in network tests (REALTLS_LIVE=1)
 - [x] JA3 / JA4 computation, validated against a real Chrome capture
 - [x] TLS 1.3 record layer + key schedule (HKDF, validated vs RFC 8448)
 - [x] Handshake state machine (X25519 + X25519MLKEM768, AEAD, cert + Finished verification)
-- [x] Certificate compression (RFC 8879 brotli) — required by Meta
+- [x] Certificate compression (RFC 8879 brotli) — required by some CDNs
 - [x] HTTP/2 via Node's built-in `http2` over our socket
-- [x] **Live test: real `200` from `www.metacareers.com`** (curl/default-fetch get 401)
+- [x] **Live test: presents Chrome's exact JA4 to a TLS-fingerprint service** (`tls.peet.ws`)
 - [x] undici `Dispatcher` + `realFetch` / `install()` (auto Chrome headers, gzip/br/zstd decompression)
 - [x] Native backend wrapping uTLS (`bogdanfinn/tls-client`) via FFI — code complete; needs the
       shared library present (`REALTLS_NATIVE_LIB`) to run. Gives exact HTTP/2 + header order.

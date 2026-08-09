@@ -2,9 +2,12 @@
  * How realtls is meant to be used.
  *
  * Legend:
- *   ✅ WORKS TODAY  — the fingerprint core is implemented and tested.
- *   🚧 TARGET API   — the live fetch path (engine + undici dispatcher) is in progress;
- *                     this is the exact surface it will expose.
+ *   ✅ WORKS TODAY  — the pure-TS engine + fetch integration are implemented and tested.
+ *   🚧 TARGET API   — planned surface, not yet implemented.
+ *
+ * The examples hit https://tls.peet.ws/api/all — a TLS-fingerprint echo service that
+ * reports the JA3/JA4 it observed, so you can verify the request looks like Chrome. Point
+ * these at any host that fingerprints TLS to reject non-browser clients.
  *
  * This file is a design sketch and is intentionally excluded from the build/lint.
  */
@@ -14,9 +17,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { realFetch } from '@realtls/js';
 
-const res = await realFetch('https://www.metacareers.com/jobsearch/');
-console.log(res.status); // 200  (curl / default fetch get 401 here)
-console.log(await res.text()); // undici auto-decompresses gzip/br/zstd
+const res = await realFetch('https://tls.peet.ws/api/all');
+const info = await res.json(); // undici auto-decompresses gzip/br/zstd
+console.log(info.tls.ja4); // t13d1516h2_8daaf6152771_806a8c22fdea  (a real Chrome 151)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ✅ 2. Zero per-call change: install once, every global fetch() becomes browser-like.
@@ -24,7 +27,7 @@ console.log(await res.text()); // undici auto-decompresses gzip/br/zstd
 import { install } from '@realtls/js';
 
 install(); // replaces globalThis.fetch
-await fetch('https://www.metacareers.com/jobsearch/'); // now indistinguishable from Chrome
+await fetch('https://tls.peet.ws/api/all'); // now indistinguishable from Chrome
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ✅ 3. The undici Dispatcher directly (use undici's fetch, not Node's global fetch).
@@ -32,39 +35,28 @@ await fetch('https://www.metacareers.com/jobsearch/'); // now indistinguishable 
 import { fetch as undiciFetch } from 'undici';
 import { chromeDispatcher } from '@realtls/js';
 
-const r = await undiciFetch('https://www.metacareers.com/jobsearch/', {
+const r = await undiciFetch('https://tls.peet.ws/api/all', {
     dispatcher: chromeDispatcher(),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 🚧 4. Choosing a browser profile and engine explicitly.
+// ✅ 4. Choosing a browser profile / engine explicitly.
 // ─────────────────────────────────────────────────────────────────────────────
-import { chrome151 } from '@realtls/js';
+import { chrome151, nativeFetch } from '@realtls/js';
 
-const dispatcher = chromeDispatcher({
-    profile: chrome151, // which browser fingerprint to emulate
-    engine: 'pure', // 'pure' (default, zero native deps) | 'native' (uTLS, max fidelity)
-});
-await fetch('https://tls.peet.ws/api/all', { dispatcher });
-
-// A whole client bound to one profile, reused across requests (keep-alive pooled):
-import { RealTLSClient } from '@realtls/js';
-
-const client = new RealTLSClient({ profile: chrome151 });
-const a = await client.fetch('https://www.metacareers.com/jobsearch/');
-const b = await client.fetch('https://www.metacareers.com/careers/');
-await client.close();
+await realFetch('https://tls.peet.ws/api/all', { profile: chrome151 });
+// Highest fidelity (exact HTTP/2 + header order) via the uTLS native backend:
+await nativeFetch('https://tls.peet.ws/api/all', { profile: chrome151 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ✅ 5. What already works today: inspect/build the fingerprint itself.
+// ✅ 5. What already works at the byte level: inspect/build the fingerprint itself.
 // ─────────────────────────────────────────────────────────────────────────────
 import { buildClientHello, parseClientHello, ja4, generateGrease, chrome151 as chrome } from '@realtls/js';
 import { randomBytes } from 'node:crypto';
 
-// Build a byte-exact Chrome ClientHello with fresh per-connection randomness…
 const clientHello = buildClientHello({
     profile: chrome,
-    serverName: 'www.metacareers.com',
+    serverName: 'tls.peet.ws',
     clientRandom: randomBytes(32),
     sessionId: randomBytes(32),
     grease: generateGrease((n) => randomBytes(n)),
@@ -74,7 +66,4 @@ const clientHello = buildClientHello({
     ],
     echGreasePayload: randomBytes(230),
 });
-
-// …and confirm it fingerprints as Chrome:
-console.log(ja4(parseClientHello(clientHello)));
-// -> t13d1516h2_8daaf6152771_806a8c22fdea   (identical to a real Chrome 151)
+console.log(ja4(parseClientHello(clientHello))); // t13d1516h2_8daaf6152771_806a8c22fdea

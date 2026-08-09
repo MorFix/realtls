@@ -22,9 +22,7 @@ const fixture = JSON.parse(readFileSync(new URL('./fixtures/chrome151-fingerprin
     };
 };
 
-const capturedBytes = new Uint8Array(
-    readFileSync(new URL('./fixtures/chrome151-clienthello-metacareers.bin', import.meta.url)),
-);
+const capturedBytes = new Uint8Array(readFileSync(new URL('./fixtures/chrome151-clienthello.bin', import.meta.url)));
 
 /** Deterministic inputs so the builder's output is reproducible in tests. */
 const grease: GreaseValues = {
@@ -40,7 +38,7 @@ const keyShares: KeyShareEntry[] = [
 ];
 const baseParams = {
     profile: chrome151,
-    serverName: 'www.metacareers.com',
+    serverName: 'tls.peet.ws',
     clientRandom: new Uint8Array(32),
     sessionId: new Uint8Array(32),
     keyShares,
@@ -51,7 +49,7 @@ const baseParams = {
 describe('captured Chrome 151 ground truth', () => {
     it('parser + JA4 reproduce Chrome from the raw captured ClientHello', () => {
         const parsed = parseClientHello(capturedBytes);
-        expect(parsed.serverName).toBe('www.metacareers.com');
+        expect(parsed.serverName).toBe('tls.peet.ws');
         expect(ja4(parsed)).toBe(fixture.tls.ja4);
         expect(ja4Raw(parsed)).toBe(fixture.tls.ja4_r);
     });
