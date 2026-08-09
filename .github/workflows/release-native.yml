@@ -1,0 +1,79 @@
+name: Release @realtls/native
+
+# Publishes the per-platform @realtls/native-<key> packages (each with one prebuilt uTLS
+# shared library, verified against binaries.json) and then the @realtls/native wrapper.
+# Triggered when packages/native/package.json or binaries.json changes on main.
+# Auth via npm Trusted Publishing (OIDC): each package name (@realtls/native and every
+# @realtls/native-* ) needs a one-time trusted-publisher config. See docs/PUBLISHING.md.
+
+on:
+  push:
+    branches: [main]
+    paths: ['packages/native/package.json', 'packages/native/binaries.json']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  prebuilts:
+    strategy:
+      matrix:
+        key: [darwin-arm64, darwin-x64, linux-x64-glibc, linux-x64-musl, linux-arm64, win32-x64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm install -g npm@latest
+      - name: Prepare binary for ${{ matrix.key }}
+        run: node packages/native/scripts/prepare-binaries.mjs ${{ matrix.key }}
+      - name: Publish @realtls/native-${{ matrix.key }} (skip if already published)
+        working-directory: packages/native/prebuilt/${{ matrix.key }}
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "$name@$version already published — skipping."
+          else
+            npm publish --access public
+          fi
+
+  main:
+    needs: prebuilts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+          cache: pnpm
+      - run: npm install -g npm@latest
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @realtls/native run build
+
+      - id: version
+        run: echo "version=$(node -p "require('./packages/native/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Publish @realtls/native (skip if already published)
+        working-directory: packages/native
+        run: |
+          if npm view "@realtls/native@${{ steps.version.outputs.version }}" version >/dev/null 2>&1; then
+            echo "already published — skipping."
+          else
+            npm publish --access public
+          fi
+
+      - name: Tag + GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: native-v${{ steps.version.outputs.version }}
+          name: '@realtls/native v${{ steps.version.outputs.version }}'
+          generate_release_notes: true

@@ -42,11 +42,12 @@ const r = await undiciFetch('https://tls.peet.ws/api/all', {
 // ─────────────────────────────────────────────────────────────────────────────
 // ✅ 4. Choosing a browser profile / engine explicitly.
 // ─────────────────────────────────────────────────────────────────────────────
-import { chrome151, nativeFetch } from '@realtls/js';
+import { chrome151 } from '@realtls/js';
+import { nativeFetch } from '@realtls/native';
 
 await realFetch('https://tls.peet.ws/api/all', { profile: chrome151 });
 // Highest fidelity (exact HTTP/2 + header order) via the uTLS native backend:
-await nativeFetch('https://tls.peet.ws/api/all', { profile: chrome151 });
+await nativeFetch('https://tls.peet.ws/api/all');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ✅ 5. What already works at the byte level: inspect/build the fingerprint itself.

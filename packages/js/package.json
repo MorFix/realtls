@@ -1,0 +1,55 @@
+{
+    "name": "@realtls/js",
+    "version": "0.2.0",
+    "description": "Perform TLS 1.3 + HTTP/2 exactly like a real browser (Chrome) from Node/TypeScript, so fetch() defeats JA3/JA4 fingerprinting. Pure-TypeScript TLS 1.3 stack + undici fetch integration.",
+    "type": "module",
+    "license": "MIT",
+    "author": "MorFix",
+    "publishConfig": {
+        "access": "public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/MorFix/realtls.git",
+        "directory": "packages/js"
+    },
+    "keywords": [
+        "tls",
+        "ja3",
+        "ja4",
+        "fingerprint",
+        "chrome",
+        "http2",
+        "fetch",
+        "undici",
+        "impersonate",
+        "mlkem"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "typecheck": "tsc --noEmit -p tsconfig.json",
+        "prepublishOnly": "pnpm run build"
+    },
+    "dependencies": {
+        "@noble/ciphers": "^2.3.0",
+        "@noble/curves": "^2.3.0",
+        "@noble/hashes": "^2.3.0",
+        "@noble/post-quantum": "^0.7.0",
+        "undici": "^8.10.0"
+    }
+}

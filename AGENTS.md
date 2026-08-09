@@ -31,8 +31,8 @@ from two independent, cross-checked sources of ground truth:
   This is the byte-level source of truth and is what our unit tests assert against.
 
 Both captures agreed. The distilled expected values live in
-`tests/fixtures/chrome151-fingerprint.json`; the raw handshake bytes live in
-`tests/fixtures/chrome151-clienthello.{bin,hex}`.
+`packages/js/tests/fixtures/chrome151-fingerprint.json`; the raw handshake bytes live in
+`packages/js/tests/fixtures/chrome151-clienthello.{bin,hex}`.
 
 > Captured profile: **Chrome 151, macOS**, 2026-08-09.
 > `JA4 = t13d1516h2_8daaf6152771_806a8c22fdea`,
@@ -142,21 +142,26 @@ our handshake as Chrome's exact JA4.
 
 ---
 
-## Repository layout
+## Repository layout (pnpm monorepo)
 
 ```
-src/
-  profiles/   Browser profiles (Chrome 151): ciphers, extensions, groups, sigalgs, H2 settings
-  tls/        Record layer, handshake state machine, key schedule, AEAD, ClientHello builder
-    pure/       pure-TS engine
-    boringssl/  native backend (opt-in)
-  http2/      HTTP/2 framing, HPACK, Chrome SETTINGS + header ordering
-  fetch/      undici Dispatcher / connector + realFetch wrapper
-  util/       ByteWriter/Reader and helpers
-tests/
-  fixtures/   Captured Chrome ground truth (JSON + raw ClientHello bytes)
-  live/       Opt-in network tests (REALTLS_LIVE=1)
-scripts/      Capture/decode helpers (pcap → ClientHello)
+packages/
+  js/                       @realtls/js — pure-TypeScript engine
+    src/
+      profiles/  Browser profiles (Chrome 151): ciphers, extensions, groups, sigalgs, H2
+      tls/       Record layer, handshake state machine, key schedule, AEAD, ClientHello builder
+      http2/     HTTP/2 client (Node http2) with Chrome SETTINGS + header ordering
+      fetch/     undici Dispatcher / connector + realFetch + install
+      util/      ByteWriter/Reader and helpers
+    tests/
+      fixtures/  Captured Chrome ground truth (JSON + raw ClientHello bytes)
+      live/      Opt-in network tests (REALTLS_LIVE=1)
+  native/                   @realtls/native — uTLS (bogdanfinn/tls-client) FFI backend
+    src/         loader (koffi), tlsClient, fetch, platform, profile
+    binaries.json           Pinned uTLS release + per-platform asset checksums
+    scripts/     bump-binaries.mjs (refresh manifest), prepare-binaries.mjs (build sub-packages)
+    prebuilt/    Generated @realtls/native-<platform> packages (git-ignored, built in CI)
+scripts/          Repo-level capture/decode helpers (pcap → ClientHello)
 ```
 
 ## Conventions

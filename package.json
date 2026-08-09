@@ -1,72 +1,32 @@
 {
-    "name": "@realtls/js",
-    "version": "0.1.0",
-    "description": "Perform TLS + HTTP/2 exactly like a real browser (Chrome) from Node/TypeScript, so fetch() defeats JA3/JA4 fingerprinting. Pure-TS TLS 1.3 stack (default) + optional uTLS native backend.",
+    "name": "realtls",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Monorepo for realtls — perform TLS 1.3 + HTTP/2 exactly like a real browser from Node/TypeScript.",
     "type": "module",
     "license": "MIT",
     "author": "MorFix",
-    "publishConfig": {
-        "access": "public"
-    },
+    "packageManager": "pnpm@10.25.0",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/MorFix/realtls.git"
     },
-    "keywords": [
-        "tls",
-        "ja3",
-        "ja4",
-        "fingerprint",
-        "chrome",
-        "http2",
-        "fetch",
-        "undici",
-        "impersonate",
-        "utls",
-        "mlkem"
-    ],
     "engines": {
         "node": ">=20"
     },
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js"
-        }
-    },
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "files": [
-        "dist",
-        "README.md",
-        "AGENTS.md"
-    ],
     "scripts": {
+        "build": "pnpm -r run build",
+        "typecheck": "pnpm -r run typecheck",
         "lint": "eslint .",
         "format": "prettier --write .",
-        "typecheck": "tsc --noEmit -p tsconfig.build.json",
-        "prebuild": "npm run lint && npm run typecheck",
-        "build": "tsc -p tsconfig.build.json",
-        "pretest": "npm run lint",
         "test": "vitest run",
-        "test:watch": "vitest",
-        "test:live": "REALTLS_LIVE=1 vitest run tests/live",
-        "check": "npm run lint && npm run typecheck && vitest run",
-        "prepublishOnly": "npm run build"
+        "test:live": "REALTLS_LIVE=1 vitest run",
+        "check": "pnpm run lint && pnpm run typecheck && vitest run"
     },
-    "dependencies": {
-        "@noble/ciphers": "^2.3.0",
-        "@noble/curves": "^2.3.0",
-        "@noble/hashes": "^2.3.0",
-        "@noble/post-quantum": "^0.7.0"
-    },
-    "peerDependencies": {
-        "undici": ">=6"
-    },
-    "peerDependenciesMeta": {
-        "undici": {
-            "optional": true
-        }
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "koffi"
+        ]
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
@@ -76,10 +36,6 @@
         "prettier": "^3.9.6",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.66.0",
-        "undici": "^8.10.0",
         "vitest": "^4.1.10"
-    },
-    "optionalDependencies": {
-        "koffi": "^3.1.4"
     }
 }

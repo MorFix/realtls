@@ -3,6 +3,13 @@ dist/
 *.log
 .DS_Store
 coverage/
+
+# Generated per-platform native packages + downloaded shared libraries
+packages/native/prebuilt/
+*.dylib
+*.so
+*.dll
+
 # Never commit raw packet captures or key logs (may contain private data)
 *.pcap
 *.pcapng

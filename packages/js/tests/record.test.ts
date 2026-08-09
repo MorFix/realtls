@@ -43,7 +43,7 @@ describe('TLS 1.3 record layer vs RFC 8448 §3', () => {
 
     it('rejects a tampered record (AEAD authentication failure)', () => {
         const tampered = CLIENT_FINISHED_RECORD.slice();
-        tampered[12] ^= 0x01;
+        tampered[12] = ((tampered[12] ?? 0) ^ 0x01) & 0xff;
         const prot = new RecordProtection(params, key, iv);
         expect(() => prot.decryptRecord(tampered)).toThrow();
     });

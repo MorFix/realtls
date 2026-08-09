@@ -36,6 +36,14 @@ export default tseslint.config(
         },
     },
     {
-        ignores: ['**/dist/', 'coverage/', 'scripts/', 'examples/'],
+        ignores: [
+            '**/dist/',
+            'coverage/',
+            'scripts/',
+            'vitest.config.ts',
+            'packages/*/examples/',
+            'packages/*/scripts/',
+            'packages/native/prebuilt/',
+        ],
     },
 );

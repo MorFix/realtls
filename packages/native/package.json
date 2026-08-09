@@ -1,0 +1,60 @@
+{
+    "name": "@realtls/native",
+    "version": "0.1.0",
+    "description": "Highest-fidelity backend for realtls: HTTP requests via the uTLS (bogdanfinn/tls-client) shared library, with exact browser TLS + HTTP/2 fingerprints. Prebuilt binaries ship as per-platform packages; nothing is downloaded at runtime.",
+    "type": "module",
+    "license": "MIT",
+    "author": "MorFix",
+    "publishConfig": {
+        "access": "public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/MorFix/realtls.git",
+        "directory": "native"
+    },
+    "keywords": [
+        "tls",
+        "ja3",
+        "ja4",
+        "utls",
+        "fingerprint",
+        "chrome",
+        "http2",
+        "fetch",
+        "impersonate"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "scripts": {
+        "typecheck": "tsc --noEmit -p tsconfig.json",
+        "build": "tsc -p tsconfig.build.json",
+        "prepare:binaries": "node scripts/prepare-binaries.mjs",
+        "bump:binaries": "node scripts/bump-binaries.mjs",
+        "prepublishOnly": "pnpm run build"
+    },
+    "dependencies": {
+        "koffi": "^3.1.4"
+    },
+    "optionalDependencies": {
+        "@realtls/native-darwin-arm64": "0.1.0",
+        "@realtls/native-darwin-x64": "0.1.0",
+        "@realtls/native-linux-x64-glibc": "0.1.0",
+        "@realtls/native-linux-x64-musl": "0.1.0",
+        "@realtls/native-linux-arm64": "0.1.0",
+        "@realtls/native-win32-x64": "0.1.0"
+    }
+}

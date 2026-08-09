@@ -1,78 +1,58 @@
 # Packaging & cross-platform install strategy
 
-Two published packages under the free `@realtls` org, named to distinguish the
-implementations:
+A **pnpm monorepo** publishing under the free `@realtls` org:
 
-- **`@realtls/js`** — the pure-TypeScript engine + fetch integration (this repo). Zero
-  native deps; `npm install @realtls/js` just works everywhere with no build step.
-- **`@realtls/native`** — the optional uTLS backend (the shared library + its loader),
-  installed only when maximum fidelity is wanted.
-
-> On npm plans: npm _workspaces_ and _public_ scoped packages are free — only _private_
-> packages/org seats cost money. So `@realtls/js` and `@realtls/native` are both free to publish.
+- **`@realtls/js`** — the pure-TypeScript engine + fetch integration. Zero native deps;
+  `npm install @realtls/js` just works everywhere with no build step.
+- **`@realtls/native`** — the optional uTLS backend wrapper (koffi FFI). No binary of its own.
+- **`@realtls/native-<platform>`** — per-platform packages, each carrying **one** prebuilt
+  uTLS shared library and declaring `os`/`cpu`/`libc`.
 
 ## Tier 1 — `@realtls/js`: pure JavaScript, zero native
 
-The default `pure` engine and all its dependencies (`@noble/*`, `undici`) are pure JS with
-**no native code, no postinstall, no node-gyp**. So the default install is friction-free on
-macOS / Linux / Windows, any CPU arch, and on Deno/Bun/bundlers. This is the single most
-important decision: **fidelity via bytes we control, not a native library the user compiles.**
+The engine and its deps (`@noble/*`, `undici`) are pure JS: **no native code, no postinstall,
+no node-gyp**. Friction-free on macOS / Linux / Windows, any CPU arch, and Deno/Bun/bundlers.
+This is the core decision: **fidelity via bytes we control, not a native library the user compiles.**
 
-What ships in `@realtls/js`:
+## Tier 2 — `@realtls/native`: prebuilt binaries, no runtime download
 
-- ESM + `.d.ts` (already configured). Node ≥ 20.
-- No `postinstall`. No compiled dependencies in `dependencies`.
-- `undici` as a normal dependency (used for the Dispatcher, pooling, decompression).
-- A lean `files` allowlist (`dist`, `README.md`, `AGENTS.md`).
+`@realtls/native` wraps uTLS (`bogdanfinn/tls-client`) — a `cffi` shared library exposing
+`request(json) -> json`, called via **`koffi`**. It ships the browser fingerprint database
+and HTTP/2, giving exact header order + SETTINGS.
 
-This tier is the whole current product and is what we publish first as `@realtls/js@0.x`.
+The ~11 MB per-platform shared library is delivered with the **platform-specific optional
+packages** pattern (esbuild / `@napi-rs` / swc):
 
-## Tier 2 — `@realtls/native`: the optional uTLS backend
+1. Each platform's library is published as its own package, e.g. `@realtls/native-darwin-arm64`,
+   `-linux-x64-gnu`, `-win32-x64`, declaring `os`/`cpu`/`libc`.
+2. `@realtls/native` lists all of them under `optionalDependencies`; **npm/pnpm install only
+   the one matching the host** and skip the rest.
+3. At runtime `@realtls/native` `import`s the matching sub-package to get the library path —
+   **nothing is downloaded and nothing is written at runtime**, so it works in read-only and
+   air-gapped environments (Lambda, distroless, Alpine). `REALTLS_NATIVE_LIB` overrides the
+   path (custom builds / tests).
 
-`engine: 'native'` wraps **uTLS** (`bogdanfinn/tls-client`), which ships as a single
-`cffi` **shared library** exposing a `request(json) -> json` C ABI (it already includes the
-browser fingerprint database and HTTP/2, giving exact header order + SETTINGS). We call it
-via **`koffi`** (FFI), an `optionalDependency` that ships its own prebuilt binaries.
+Why this over the alternatives:
 
-To keep `@realtls/native` a single package while supporting many platforms, we do **not**
-bundle or sub-package the ~5–10 MB shared libraries. Instead:
-
-1. The `.so`/`.dylib`/`.dll` for each platform is published as a **GitHub Release asset**
-   (free hosting), one per `os-arch`, with a SHA-256 checksum committed in the repo.
-2. On first use of `engine: 'native'`, `realtls` resolves the library in this order:
-   - `REALTLS_NATIVE_LIB` env var (explicit path — used in tests/air-gapped installs),
-   - a previously cached download under the OS cache dir,
-   - otherwise **lazy-download** the matching asset from the pinned GitHub Release,
-     verify its checksum, and cache it.
-3. If `koffi` is absent, the platform is unsupported, or the download fails, `engine:
-'native'` throws a clear, actionable error — and callers can fall back to `pure`.
-
-Why lazy-download over the alternatives:
-
-- **vs. bundling all binaries in the package**: keeps the default install tiny; native
-  users pay the download once instead of everyone shipping 30–60 MB.
-- **vs. one npm package per platform** (esbuild model): no multi-package publish workflow;
-  the pure engine never depends on any of them.
+- **vs. runtime download**: no filesystem write, no cold-start network, works read-only.
+- **vs. bundling all binaries in one package**: installs pull only ~11 MB, not ~66 MB.
 - **vs. postinstall compile**: no Go toolchain / node-gyp on user machines.
 
-Trade-off: the first `engine: 'native'` call needs network (once). This is acceptable
-because `native` is opt-in; the zero-network default (`pure`) already handles the common case.
+### Building & bumping the binaries
+
+- `binaries.json` pins the uTLS release and every per-platform **sha256**.
+- `pnpm --filter @realtls/native run bump:binaries [version]` refreshes `binaries.json`
+  (downloads each asset, recomputes checksums) — see `scripts/bump-binaries.mjs`.
+- `scripts/prepare-binaries.mjs <key>` generates `prebuilt/<key>/` (package.json + index.js +
+  the checksum-verified binary). CI runs it per platform in a matrix and publishes each
+  sub-package, then `@realtls/native` (see `.github/workflows/release-native.yml`).
 
 ## Runtime capability check
 
 ```ts
-import { engines } from '@realtls/js';
-engines.available(); // -> ['pure']  or  ['pure', 'native']
+import { isNativeAvailable } from '@realtls/native';
+await isNativeAvailable(); // false if no prebuilt for this platform and no REALTLS_NATIVE_LIB
 ```
 
-Consumers can pin `pure` for reproducible, dependency-light deploys (Lambda, Alpine) and
-opt into `native` only where the shared library is available.
-
-## Checklist
-
-- [ ] `dependencies` contains only pure-JS packages; no `postinstall`.
-- [ ] `koffi` is an `optionalDependency` (native backend only).
-- [ ] `engine: 'native'` resolves the lib via env → cache → GitHub Release, with checksum.
-- [ ] `engine: 'native'` throws a clear error (or falls back to `pure`) when unavailable.
-- [ ] CI cross-compiles the uTLS shared libraries and attaches them to the GitHub Release.
-- [ ] `files` allowlist keeps the published tarball lean (`dist`, `README`, `AGENTS.md`).
+Pin `@realtls/js` for reproducible, dependency-light deploys; add `@realtls/native` only where
+the higher-fidelity HTTP/2 fingerprint is needed and a prebuilt exists.

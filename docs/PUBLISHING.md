@@ -1,45 +1,53 @@
 # Publishing
 
-Packages (both public, both free under the `@realtls` org):
+pnpm monorepo; packages published under the free `@realtls` org:
 
-- **`@realtls/js`** — this repo (pure-TypeScript engine + fetch integration).
-- **`@realtls/native`** — the optional uTLS backend (planned).
+- **`@realtls/js`** — pure-TypeScript engine (packages/js).
+- **`@realtls/native`** — uTLS backend wrapper (packages/native).
+- **`@realtls/native-<platform>`** — per-platform prebuilt binaries (generated in CI).
 
-## One-time setup — npm Trusted Publishing (OIDC, no token)
+Auth uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC): npm
+trusts the GitHub Actions workflows directly, so there is **no `NPM_TOKEN`** to store.
 
-We publish from CI via [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers):
-npm trusts this GitHub Actions workflow directly through OIDC, so there is **no `NPM_TOKEN`**
-to create, store, or rotate.
+## One-time setup
 
-1. The `@realtls` npm org exists (owner: `morfix`).
-2. On npmjs.com, open **`@realtls/js` → Settings → Trusted Publisher** and add:
-   - Provider: **GitHub Actions**
-   - Repository: **`MorFix/realtls`**
-   - Workflow filename: **`release.yml`**
+For each package name, on npmjs.com → package **Settings → Trusted Publisher**, add the
+GitHub repo `MorFix/realtls` and the publishing workflow:
 
-The very first publish of a brand-new package name is done manually (see below); trusted
-publishing then handles every subsequent release. The workflow already declares
-`permissions: id-token: write` and installs a recent npm (≥ 11.5.1) so the OIDC handshake
-works. Provenance is attached automatically.
+| Package                           | Workflow file        |
+| --------------------------------- | -------------------- |
+| `@realtls/js`                     | `release-js.yml`     |
+| `@realtls/native`                 | `release-native.yml` |
+| each `@realtls/native-<platform>` | `release-native.yml` |
 
-## Releasing (automated)
+A brand-new package name must be published once manually (see below) before its trusted
+publisher can be configured; thereafter releases are automatic.
 
-The [`Release`](../.github/workflows/release.yml) workflow publishes and tags automatically:
+## Releasing
 
-1. Bump the version in `package.json` (e.g. `npm version patch --no-git-tag-version`).
-2. Commit and push to `main` (or run it manually via **Actions → Release → Run workflow**).
-3. CI verifies (lint + typecheck + tests + build), runs `npm publish --access public`
-   (authenticated via OIDC), then creates the `vX.Y.Z` git tag and a GitHub Release.
-
-The workflow is idempotent: it only releases when `package.json`'s version has no matching
-`vX.Y.Z` tag.
-
-## Publishing manually (local)
+Each package releases independently when its `package.json` version changes on `main`
+(workflows also support **Actions → Run workflow**). Bump with pnpm:
 
 ```bash
-npm run build
-npm publish --access public          # prompts for your 2FA OTP
+pnpm --filter @realtls/js version patch        # or minor / major
+git commit -am "release @realtls/js" && git push
+```
+
+- `release-js.yml`: verify (lint + typecheck + tests + build) → `npm publish` (OIDC) →
+  tag `js-vX.Y.Z` + GitHub Release. Idempotent (skips if the tag exists).
+- `release-native.yml`: a matrix builds + publishes each `@realtls/native-<platform>`
+  (checksum-verified against `binaries.json`), then publishes `@realtls/native` and tags
+  `native-vX.Y.Z`. Each publish skips if that version already exists.
+
+To ship a new uTLS version: `pnpm --filter @realtls/native run bump:binaries`, bump
+`packages/native/package.json`, commit, push.
+
+## Publishing manually (first release of a new name / local)
+
+```bash
+pnpm --filter @realtls/js run build
+cd packages/js && npm publish --access public   # prompts for your 2FA OTP
 ```
 
 > A local interactive publish requires your 2FA one-time password. CI avoids that via
-> Trusted Publishing (OIDC) instead of a stored token.
+> Trusted Publishing (OIDC).

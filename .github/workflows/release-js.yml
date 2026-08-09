@@ -1,0 +1,62 @@
+name: Release @realtls/js
+
+# Publishes @realtls/js and tags when packages/js/package.json's version changes on main.
+# Auth via npm Trusted Publishing (OIDC) — configure the trusted publisher for @realtls/js
+# (repo MorFix/realtls, workflow release-js.yml). See docs/PUBLISHING.md.
+
+on:
+  push:
+    branches: [main]
+    paths: ['packages/js/package.json']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+          cache: pnpm
+      - run: npm install -g npm@latest # OIDC trusted publishing needs npm >= 11.5.1
+      - run: pnpm install --frozen-lockfile
+
+      - id: version
+        run: echo "version=$(node -p "require('./packages/js/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - id: check
+        run: |
+          if git rev-parse "js-v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.check.outputs.release == 'true'
+        run: |
+          pnpm run lint
+          pnpm run typecheck
+          pnpm test
+          pnpm --filter @realtls/js run build
+
+      - name: Publish @realtls/js
+        if: steps.check.outputs.release == 'true'
+        run: npm publish --access public
+        working-directory: packages/js
+
+      - name: Tag + GitHub Release
+        if: steps.check.outputs.release == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: js-v${{ steps.version.outputs.version }}
+          name: '@realtls/js v${{ steps.version.outputs.version }}'
+          generate_release_notes: true
