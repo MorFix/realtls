@@ -18,6 +18,19 @@ export {
 } from './tls/clienthello.js';
 
 export { ja4, ja4Raw, ja3 } from './tls/ja4.js';
+export {
+    KeySchedule,
+    cipherParams,
+    hkdfExtract,
+    hkdfExpandLabel,
+    deriveSecret,
+    transcriptHash,
+    trafficKeyIv,
+    finishedKey,
+    finishedVerifyData,
+    type CipherParams,
+    type AeadId,
+} from './tls/keyschedule.js';
 export { generateGrease, isGrease, GREASE_VALUES, type GreaseValues } from './tls/grease.js';
 export { ByteWriter, ByteReader, hex, fromHex, concatBytes } from './util/bytes.js';
 export { nonNull } from './util/assert.js';
