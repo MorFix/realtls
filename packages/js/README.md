@@ -1,4 +1,4 @@
-# realtls
+# @realtls/js
 
 Perform **TLS 1.3 + HTTP/2 exactly like a real Chrome browser** from Node/TypeScript, so
 that `fetch()` can reach servers that classify clients by their TLS/HTTP fingerprint
@@ -9,12 +9,6 @@ reject anything that isn't a real browser — `curl` and Node's default `fetch` 
 fingerprint) get `401`/`403` where Chrome gets `200`. `realtls` makes Node send the same
 bytes Chrome does. You can verify it against a TLS-fingerprint echo such as
 `https://tls.peet.ws/api/all`, which reports the JA3/JA4 it observed.
-
-> **Status:** the **fingerprint core is complete and tested** — a byte-exact Chrome-151
-> ClientHello builder whose **JA4 matches a real Chrome** (`t13d1516h2_8daaf6152771_806a8c22fdea`)
-> and whose **JA3 MD5 matches exactly** when ordered like the reference capture. The live
-> handshake engine, HTTP/2 layer, and `fetch` integration are under active construction
-> (see [Roadmap](#roadmap)). This is why the package is `0.x`.
 
 ## Why this is hard (and why "just set the cipher list" fails)
 
@@ -70,7 +64,7 @@ await fetch(url, { dispatcher: chromeDispatcher() });
 > not Node's built-in global `fetch` — Node bundles a different undici build whose handler
 > interface is incompatible with an external dispatcher. `realFetch`/`install` handle this.
 
-## Available today (fingerprint core)
+## Low-level fingerprint API
 
 ```ts
 import { buildClientHello, parseClientHello, ja4, chrome151 } from '@realtls/js';
@@ -83,10 +77,10 @@ console.log(ja4(parsed)); // t13d1516h2_8daaf6152771_806a8c22fdea
 ## Development
 
 ```bash
-npm install
-npm run check      # lint (bans `!`) + typecheck + tests
-npm test
-npm run test:live  # opt-in network tests (REALTLS_LIVE=1)
+pnpm install
+pnpm run check      # lint (bans `!`) + typecheck + tests
+pnpm test
+pnpm test:live      # opt-in network tests (REALTLS_LIVE=1)
 ```
 
 ### House rules
@@ -95,21 +89,6 @@ npm run test:live  # opt-in network tests (REALTLS_LIVE=1)
   `nonNull()` helper instead.
 - Crypto is only ever used from `@noble/*`; we do not hand-roll cryptographic primitives.
 - Never commit packet captures (`*.pcap`) or key logs.
-
-## Roadmap
-
-- [x] Chrome 151 profile + byte-exact ClientHello builder
-- [x] JA3 / JA4 computation, validated against a real Chrome capture
-- [x] TLS 1.3 record layer + key schedule (HKDF, validated vs RFC 8448)
-- [x] Handshake state machine (X25519 + X25519MLKEM768, AEAD, cert + Finished verification)
-- [x] Certificate compression (RFC 8879 brotli) — required by some CDNs
-- [x] HTTP/2 via Node's built-in `http2` over our socket
-- [x] **Live test: presents Chrome's exact JA4 to a TLS-fingerprint service** (`tls.peet.ws`)
-- [x] undici `Dispatcher` + `realFetch` / `install()` (auto Chrome headers, gzip/br/zstd decompression)
-- [x] Native backend wrapping uTLS (`bogdanfinn/tls-client`) via FFI — code complete; needs the
-      shared library present (`REALTLS_NATIVE_LIB`) to run. Gives exact HTTP/2 + header order.
-- [ ] Auto-download the uTLS shared library from the GitHub Release (see `docs/PACKAGING.md`)
-- [ ] HelloRetryRequest + session resumption/tickets
 
 ## License
 

@@ -21,7 +21,9 @@
         "format": "prettier --write .",
         "test": "vitest run",
         "test:live": "REALTLS_LIVE=1 vitest run",
-        "check": "pnpm run lint && pnpm run typecheck && vitest run"
+        "check": "pnpm run lint && pnpm run typecheck && vitest run",
+        "bump": "node scripts/bump-versions.mjs",
+        "publish:all": "node scripts/publish-all.mjs"
     },
     "pnpm": {
         "onlyBuiltDependencies": [

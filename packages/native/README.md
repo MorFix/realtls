@@ -2,7 +2,7 @@
 
 Highest-fidelity backend for [realtls](https://github.com/MorFix/realtls): HTTP requests via
 the uTLS ([`bogdanfinn/tls-client`](https://github.com/bogdanfinn/tls-client)) shared library,
-giving **exact browser TLS *and* HTTP/2 fingerprints** (SETTINGS + header order).
+giving **exact browser TLS _and_ HTTP/2 fingerprints** (SETTINGS + header order).
 
 The prebuilt binary ships in per-platform packages (`@realtls/native-<platform>`) selected by
 npm at install time — **nothing is downloaded or written at runtime**, so it works in

@@ -42,6 +42,21 @@ git commit -am "release @realtls/js" && git push
 To ship a new uTLS version: `pnpm --filter @realtls/native run bump:binaries`, bump
 `packages/native/package.json`, commit, push.
 
+## Convenience scripts
+
+```bash
+pnpm bump <patch|minor|major|X.Y.Z> [js|native]   # bump versions (both packages by default)
+pnpm publish:all [--otp=123456]                    # build + publish EVERY package locally
+```
+
+`pnpm bump` only edits `package.json` versions (no commit/tag) — commit + push to release via
+CI, or run `pnpm publish:all`. The per-platform `@realtls/native-<platform>` packages inherit
+`@realtls/native`'s version, so bumping `native` cascades to them.
+
+`pnpm publish:all` builds, prepares + checksum-verifies the native binaries, then publishes
+every package, **skipping versions already on npm** — safe to re-run if a 2FA OTP expires
+part way (re-run with a fresh `--otp`).
+
 ## Publishing manually (first release of a new name / local)
 
 ```bash
